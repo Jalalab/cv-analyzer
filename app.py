@@ -15,53 +15,50 @@ def extract_text(pdf_path):
     return text
 
 def analyze_cv(text):
-    prompt = f"""
+    try:
+        prompt = f"""
 You are an expert CV reviewer and career coach with 10 years of experience.
-Analyze the following CV carefully and provide:
-1. A score out of 100
-2. What is missing that must be added
-3. What needs to be improved
-4. What is already good
-5. One specific action the person should do today
-
-Be specific, direct, and helpful. Talk directly to the person.
+Analyze the following CV and provide exactly 5 feedback points.
 
 CV Text:
 {text}
 
-Respond in this exact format:
-SCORE: [number]
+Respond in this exact format only:
+SCORE: [number between 0-100]
 FEEDBACK:
-- ✅ [something good]
-- ❌ [something missing]
-- ⚠️ [something to improve]
-- ❌ [something missing]
-- 💡 [one action to do today]
+- [feedback point 1]
+- [feedback point 2]
+- [feedback point 3]
+- [feedback point 4]
+- [feedback point 5]
 """
-    chat_completion = client.chat.completions.create(
-        messages=[{"role": "user", "content": prompt}],
-        model="llama3-8b-8192",
-    )
+        chat_completion = client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}],
+            model="llama3-8b-8192",
+        )
 
-    response = chat_completion.choices[0].message.content
+        response = chat_completion.choices[0].message.content
+        lines = response.split('\n')
+        score = 70
+        feedback = []
 
-    lines = response.split('\n')
-    score = 50
-    feedback = []
+        for line in lines:
+            line = line.strip()
+            if line.startswith('SCORE:'):
+                try:
+                    score = int(''.join(filter(str.isdigit, line.replace('SCORE:', ''))))
+                except:
+                    score = 70
+            elif line.startswith('-'):
+                feedback.append(line)
 
-    for line in lines:
-        if line.startswith('SCORE:'):
-            try:
-                score = int(line.replace('SCORE:', '').strip())
-            except:
-                score = 50
-        elif line.strip().startswith('-'):
-            feedback.append(line.strip())
+        if not feedback:
+            feedback = ["- ✅ CV received and analyzed", "- 💡 Please try uploading again for detailed feedback"]
 
-    if not feedback:
-        feedback = ["Please try again"]
+        return score, feedback
 
-    return score, feedback
+    except Exception as e:
+        return 50, [f"- ❌ Error: {str(e)}"]
 
 @app.route('/')
 def home():
@@ -77,3 +74,6 @@ def analyze():
         return jsonify({'score': score, 'feedback': feedback})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+if __name__ == '__main__':
+    app.run(debug=True)
