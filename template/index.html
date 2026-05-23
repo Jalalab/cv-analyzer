@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Resume Analyzer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0f0f1a;
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: #1a1a2e;
+            padding: 40px;
+            border-radius: 20px;
+            width: 600px;
+            box-shadow: 0 0 30px rgba(138,43,226,0.3);
+        }
+        h1 {
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: #bf5fff;
+        }
+        p.subtitle {
+            text-align: center;
+            color: #aaa;
+            margin-bottom: 30px;
+        }
+        .upload-area {
+            border: 2px dashed #bf5fff;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        .upload-area:hover { background: #2a1a3e; }
+        input[type="file"] { display: none; }
+        .upload-label {
+            cursor: pointer;
+            color: #bf5fff;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background: #bf5fff;
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover { background: #a020f0; }
+        .result { margin-top: 30px; display: none; }
+        .score-box {
+            text-align: center;
+            background: #2a1a3e;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .score-number {
+            font-size: 60px;
+            font-weight: bold;
+            color: #bf5fff;
+        }
+        .feedback-item {
+            background: #2a1a3e;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 15px;
+        }
+        .loading {
+            text-align: center;
+            color: #bf5fff;
+            display: none;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 AI Resume Analyzer</h1>
+        <p class="subtitle">Upload your CV and get instant AI feedback</p>
+
+        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+            <p style="font-size:40px">📄</p>
+            <label class="upload-label">Click to upload your CV (PDF only)</label>
+            <p id="fileName" style="color:#aaa; margin-top:10px"></p>
+        </div>
+        <input type="file" id="fileInput" accept=".pdf" onchange="showFileName()">
+
+        <button onclick="analyzeCV()">Analyze My CV</button>
+
+        <div class="loading" id="loading">⏳ Analyzing your CV...</div>
+
+        <div class="result" id="result">
+            <div class="score-box">
+                <p style="color:#aaa; margin-bottom:5px">Your CV Score</p>
+                <div class="score-number" id="scoreNumber">0</div>
+                <p style="color:#aaa">out of 100</p>
+            </div>
+            <div id="feedbackList"></div>
+        </div>
+    </div>
+
+    <script>
+        function showFileName() {
+            const file = document.getElementById('fileInput').files[0];
+            document.getElementById('fileName').textContent = file ? file.name : '';
+        }
+
+        async function analyzeCV() {
+            const file = document.getElementById('fileInput').files[0];
+            if (!file) { alert('Please upload a PDF file first!'); return; }
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+
+            const formData = new FormData();
+            formData.append('cv', file);
+
+            const response = await fetch('/analyze', { method: 'POST', body: formData });
+            const data = await response.json();
+
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('scoreNumber').textContent = data.score;
+            
+            const feedbackList = document.getElementById('feedbackList');
+            feedbackList.innerHTML = '';
+            data.feedback.forEach(item => {
+                feedbackList.innerHTML += `<div class="feedback-item">${item}</div>`;
+            });
+
+            document.getElementById('result').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
