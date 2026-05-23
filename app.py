@@ -16,11 +16,15 @@ def extract_text(pdf_path):
 
 def analyze_cv(text):
     prompt = f"""
-You are an expert CV reviewer and career coach.
-Analyze the following CV and provide:
+You are an expert CV reviewer and career coach with 10 years of experience.
+Analyze the following CV carefully and provide:
 1. A score out of 100
-2. A list of specific improvements needed
-3. What is done well
+2. What is missing that must be added
+3. What needs to be improved
+4. What is already good
+5. One specific action the person should do today
+
+Be specific, direct, and helpful. Talk directly to the person.
 
 CV Text:
 {text}
@@ -28,11 +32,11 @@ CV Text:
 Respond in this exact format:
 SCORE: [number]
 FEEDBACK:
-- [feedback point 1]
-- [feedback point 2]
-- [feedback point 3]
-- [feedback point 4]
-- [feedback point 5]
+- ✅ [something good]
+- ❌ [something missing]
+- ⚠️ [something to improve]
+- ❌ [something missing]
+- 💡 [one action to do today]
 """
     chat_completion = client.chat.completions.create(
         messages=[{"role": "user", "content": prompt}],
