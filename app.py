@@ -69,11 +69,11 @@ def home():
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
-    file = request.files['cv']
-    file.save('uploaded_cv.pdf')
-    text = extract_text('uploaded_cv.pdf')
-    score, feedback = analyze_cv(text)
-    return jsonify({'score': score, 'feedback': feedback})
-
-if __name__ == '__main__':
-    app.run(debug=True)
+    try:
+        file = request.files['cv']
+        file.save('uploaded_cv.pdf')
+        text = extract_text('uploaded_cv.pdf')
+        score, feedback = analyze_cv(text)
+        return jsonify({'score': score, 'feedback': feedback})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
