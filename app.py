@@ -1,8 +1,11 @@
 from flask import Flask, request, jsonify, render_template
-import fitz  # PyMuPDF
-import re
+import fitz
+import os
+from groq import Groq
 
 app = Flask(__name__)
+
+client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 def extract_text(pdf_path):
     doc = fitz.open(pdf_path)
@@ -12,72 +15,49 @@ def extract_text(pdf_path):
     return text
 
 def analyze_cv(text):
-    score = 0
+    prompt = f"""
+You are an expert CV reviewer and career coach.
+Analyze the following CV and provide:
+1. A score out of 100
+2. A list of specific improvements needed
+3. What is done well
+
+CV Text:
+{text}
+
+Respond in this exact format:
+SCORE: [number]
+FEEDBACK:
+- [feedback point 1]
+- [feedback point 2]
+- [feedback point 3]
+- [feedback point 4]
+- [feedback point 5]
+"""
+    chat_completion = client.chat.completions.create(
+        messages=[{"role": "user", "content": prompt}],
+        model="llama3-8b-8192",
+    )
+    
+    response = chat_completion.choices[0].message.content
+    
+    # Parse score
+    lines = response.split('\n')
+    score = 50
     feedback = []
-
-    # Check name
-    if len(text.split('\n')[0]) > 2:
-        score += 10
-    else:
-        feedback.append("❌ Add your full name at the top")
-
-    # Check email
-    if re.search(r'[\w.-]+@[\w.-]+\.\w+', text):
-        score += 10
-    else:
-        feedback.append("❌ No email found — add your email")
-
-    # Check phone
-    if re.search(r'[\+\d][\d\s\-]{8,}', text):
-        score += 10
-    else:
-        feedback.append("❌ No phone number found")
-
-    # Check LinkedIn
-    if 'linkedin' in text.lower():
-        score += 10
-    else:
-        feedback.append("❌ Add your LinkedIn profile link")
-
-    # Check GitHub
-    if 'github' in text.lower():
-        score += 10
-    else:
-        feedback.append("❌ Add your GitHub profile link")
-
-    # Check education
-    if any(word in text.lower() for word in ['education', 'university', 'bachelor', 'master']):
-        score += 10
-    else:
-        feedback.append("❌ Add an Education section")
-
-    # Check experience
-    if any(word in text.lower() for word in ['experience', 'internship', 'worked', 'job']):
-        score += 10
-    else:
-        feedback.append("❌ Add Work Experience or Internship section")
-
-    # Check skills
-    if 'skills' in text.lower():
-        score += 10
-    else:
-        feedback.append("❌ Add a Skills section")
-
-    # Check projects
-    if 'project' in text.lower():
-        score += 10
-    else:
-        feedback.append("❌ Add a Projects section")
-
-    # Check length
-    if len(text.split()) > 200:
-        score += 10
-    else:
-        feedback.append("❌ CV is too short — add more details")
-
+    
+    for line in lines:
+        if line.startswith('SCORE:'):
+            try:
+                score = int(line.replace('SCORE:', '').strip())
+            except:
+                score = 50
+        elif line.strip().startswith('-'):
+            feedback.append(line.strip())
+    
     if not feedback:
-        feedback.append("✅ Great CV! All key sections found.")
-
+        feedback = ["Please try again"]
+    
     return score, feedback
 
 @app.route('/')
