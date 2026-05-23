@@ -42,14 +42,13 @@ FEEDBACK:
         messages=[{"role": "user", "content": prompt}],
         model="llama3-8b-8192",
     )
-    
+
     response = chat_completion.choices[0].message.content
-    
-    # Parse score
+
     lines = response.split('\n')
     score = 50
     feedback = []
-    
+
     for line in lines:
         if line.startswith('SCORE:'):
             try:
@@ -58,10 +57,10 @@ FEEDBACK:
                 score = 50
         elif line.strip().startswith('-'):
             feedback.append(line.strip())
-    
+
     if not feedback:
         feedback = ["Please try again"]
-    
+
     return score, feedback
 
 @app.route('/')
